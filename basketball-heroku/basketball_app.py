@@ -17,7 +17,7 @@ st.sidebar.header('User Input Features')
 selected_year = st.sidebar.selectbox('Year', list(reversed(range(1950,2020))))
 
 # Web scraping of NBA player stats
-@st.cache
+@st.cache_data
 def load_data(year):
     url = "https://www.basketball-reference.com/leagues/NBA_" + str(year) + "_per_game.html"
     html = pd.read_html(url, header = 0)
@@ -29,7 +29,8 @@ def load_data(year):
 playerstats = load_data(selected_year)
 
 # Sidebar - Team selection
-sorted_unique_team = sorted(playerstats.Tm.unique())
+sorted_unique_team = sorted(playerstats.Team.astype(str).unique())
+sorted_unique_team = [x for x in sorted_unique_team if x != 'nan']
 selected_team = st.sidebar.multiselect('Team', sorted_unique_team, sorted_unique_team)
 
 # Sidebar - Position selection
@@ -37,7 +38,7 @@ unique_pos = ['C','PF','SF','PG','SG']
 selected_pos = st.sidebar.multiselect('Position', unique_pos, unique_pos)
 
 # Filtering data
-df_selected_team = playerstats[(playerstats.Tm.isin(selected_team)) & (playerstats.Pos.isin(selected_pos))]
+df_selected_team = playerstats[(playerstats.Team.isin(selected_team)) & (playerstats.Pos.isin(selected_pos))]
 
 st.header('Display Player Stats of Selected Team(s)')
 st.write('Data Dimension: ' + str(df_selected_team.shape[0]) + ' rows and ' + str(df_selected_team.shape[1]) + ' columns.')
@@ -58,7 +59,7 @@ if st.button('Intercorrelation Heatmap'):
     st.header('Intercorrelation Matrix Heatmap')
     df_selected_team.to_csv('output.csv',index=False)
     df = pd.read_csv('output.csv')
-
+    df = df.apply(pd.to_numeric, errors='coerce') # Ensure numeric for corr()
     corr = df.corr()
     mask = np.zeros_like(corr)
     mask[np.triu_indices_from(mask)] = True
